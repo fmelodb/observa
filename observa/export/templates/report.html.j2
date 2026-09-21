@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observa Report — {{ meta.case_id }}</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #1f2733;
+    --muted: #5b6b7b;
+    --line: #e2e8f0;
+    --panel: #f7f9fc;
+    --accent: #1a5276;
+    --sidebar-w: 264px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.5;
+    font-size: 15px;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Sidebar TOC */
+  nav.toc {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: #0f2233;
+    color: #cdd8e3;
+    padding: 22px 18px;
+    overflow-y: auto;
+  }
+  nav.toc .brand { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: .5px; }
+  nav.toc .case { font-size: 12px; color: #8aa0b4; margin: 4px 0 18px; word-break: break-all; }
+  nav.toc ul { list-style: none; padding: 0; margin: 0; }
+  nav.toc li { margin: 2px 0; }
+  nav.toc a {
+    display: block; color: #cdd8e3; padding: 7px 10px;
+    border-radius: 6px; font-size: 14px;
+  }
+  nav.toc a:hover { background: #1c374e; color: #fff; text-decoration: none; }
+
+  main {
+    margin-left: var(--sidebar-w);
+    padding: 32px 44px 80px;
+    max-width: 1080px;
+  }
+
+  /* Banner */
+  .banner { border-bottom: 2px solid var(--line); padding-bottom: 18px; margin-bottom: 8px; }
+  .banner h1 { margin: 0 0 6px; font-size: 26px; }
+  .banner .meta-grid {
+    display: flex; flex-wrap: wrap; gap: 8px 26px;
+    color: var(--muted); font-size: 13px; margin-top: 8px;
+  }
+  .banner .meta-grid b { color: var(--ink); font-weight: 600; }
+
+  section { padding-top: 28px; margin-top: 8px; }
+  section > h2 {
+    font-size: 19px; margin: 0 0 16px; color: #2c3e50;
+    background: #d6dde4;
+    border-left: 4px solid #8b9aa8;
+    padding: 10px 16px; border-radius: 0 6px 6px 0;
+    letter-spacing: .2px;
+  }
+  h3 {
+    font-size: 15px; margin: 22px 0 10px; color: var(--accent);
+    background: #eef4fa; border-left: 4px solid var(--accent);
+    padding: 6px 12px; border-radius: 0 4px 4px 0;
+  }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 14px 16px; margin: 0 0 14px;
+  }
+  .rca-cause { font-size: 17px; font-weight: 600; }
+  .muted { color: var(--muted); }
+  p.scope { white-space: pre-wrap; }
+
+  /* Badges */
+  .badge {
+    display: inline-block; padding: 1px 8px; border-radius: 10px;
+    color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .4px; vertical-align: middle;
+  }
+  .conf-badge {
+    display: inline-block; padding: 3px 12px; border-radius: 14px;
+    font-weight: 700; font-size: 13px; color: #fff;
+  }
+  .conf-high { background: #1e8449; }
+  .conf-medium { background: #b7950b; }
+  .conf-low { background: #b03a2e; }
+
+  ul.clean { margin: 6px 0; padding-left: 20px; }
+  ul.clean li { margin: 3px 0; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 6px 0 14px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: #eef2f7; font-weight: 600; }
+  tr:nth-child(even) td { background: #fbfcfe; }
+
+  .finding { border-left: 4px solid var(--line); padding: 8px 12px; margin: 8px 0; background: #fff; border: 1px solid var(--line); border-radius: 6px; }
+  .finding .code { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--muted); }
+  .finding .evidence { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .finding .objects { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .ora-badge-problem { background:#b03a2e; color:#fff; border-radius:8px; padding:0 6px; font-size:10px; }
+  .ora-badge-baseline { background:#2471a3; color:#fff; border-radius:8px; padding:0 6px; font-size:10px; }
+  .ora-badge-outside { background:#eef2f7; color:#5b6b7b; border-radius:8px; padding:0 6px; font-size:10px; }
+  .abstain { color: var(--muted); font-style: italic; }
+  .turn-tag {
+    display: inline-block; background: #eef2f7; color: var(--muted);
+    border-radius: 6px; padding: 0 7px; font-size: 11px; font-weight: 600; margin-right: 6px;
+  }
+
+  details { margin: 8px 0; }
+  details > summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+
+  .chat-msg { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+  .chat-user { background: #fff8ec; border-color: #f3d9a4; }
+  .chat-agent, .chat-master { background: #eef5fb; border-color: #cfe0ee; }
+  .chat-msg .who { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+  .chat-msg .text { white-space: pre-wrap; }
+
+  .cove-fail { color: #b03a2e; font-weight: 700; }
+  .verdict-supported { color: #1e8449; font-weight: 700; }
+  .verdict-partial { color: #b7950b; font-weight: 700; }
+  .verdict-unsupported { color: #b03a2e; font-weight: 700; }
+  .verdict-contradicted { color: #922b21; font-weight: 700; }
+  .ev-chip {
+    display: inline-block; background: #eef4fa; border: 1px solid #cfe0ee;
+    border-radius: 10px; padding: 0 8px; margin-right: 4px;
+    font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+  }
+  .ev-uncited { color: var(--muted); font-size: 12px; font-style: italic; }
+  .ev-meta { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
+  .ev-sql { font-size: 12px; overflow-x: auto; background: #f6f6f4; padding: 10px; border-radius: 6px; white-space: pre-wrap; }
+
+  section > h2, h3, .badge, .conf-badge {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  @media print {
+    nav.toc { display: none; }
+    main { margin-left: 0; max-width: none; padding: 0; }
+    section { page-break-inside: avoid; }
+    .finding, .panel { page-break-inside: avoid; }
+    section > h2 { box-shadow: none; }
+    pre { background: none; overflow-x: visible; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <div class="brand">Observa</div>
+  <div class="case">{{ meta.case_id }}</div>
+  <ul>
+    {% if has_summary %}<li><a href="#summary">Executive summary</a></li>{% endif %}
+    {% if has_inputs %}<li><a href="#inputs">Case inputs</a></li>{% endif %}
+    {% if has_methodology %}<li><a href="#methodology">Methodology</a></li>{% endif %}
+    {% if has_agents %}<li><a href="#findings">Findings by agent</a></li>{% endif %}
+    {% if has_dialogue %}<li><a href="#dialogue">Analyst dialogue</a></li>{% endif %}
+    {% if has_verification %}<li><a href="#verification">Hypotheses &amp; verification</a></li>{% endif %}
+    {% if has_evidence %}<li><a href="#evidence">Evidence ledger</a></li>{% endif %}
+  </ul>
+</nav>
+
+<main>
+  <div class="banner">
+    <h1>Oracle Diagnostic Report</h1>
+    <div class="meta-grid">
+      <span><b>Case:</b> {{ meta.case_id }}</span>
+      {% if meta.dbid %}<span><b>DBID:</b> {{ meta.dbid }}</span>{% endif %}
+      {% if meta.oracle_version %}<span><b>Oracle:</b> {{ meta.oracle_version }}</span>{% endif %}
+      {% if meta.topology %}<span><b>Topology:</b> {{ meta.topology }}</span>{% endif %}
+      {% if meta.instance_numbers %}<span><b>Instances:</b> {{ meta.instance_numbers | join(', ') }}</span>{% endif %}
+      {% if meta.total_turns %}<span><b>Turns:</b> {{ meta.total_turns }}</span>{% endif %}
+      <span><b>Generated:</b> {{ meta.generated_at }}</span>
+      {% if confidence_pct %}
+      <span><b>Confidence:</b> <span class="conf-badge conf-{{ confidence_band }}">{{ confidence_pct }}</span></span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if has_summary %}
+  <section id="summary">
+    <h2>Executive summary</h2>
+    {% if summary.problem_restated %}
+    <p class="muted">{{ summary.problem_restated }}</p>
+    {% endif %}
+    <div class="panel">
+      <div class="rca-cause">{{ summary.root_cause }}</div>
+      {% if confidence_pct %}
+      <p class="muted" style="margin:8px 0 0;">Confidence: <span class="conf-badge conf-{{ confidence_band }}">{{ confidence_pct }}</span></p>
+      {% endif %}
+    </div>
+
+    <h3>Top findings ({{ summary.top_findings | length }})</h3>
+    {% if summary.top_findings %}
+      {% for f in summary.top_findings %}
+      <div class="finding" style="border-left-color: {{ f.severity | sev_color }};">
+        <span class="badge" style="background: {{ f.severity | sev_color }};">{{ f.severity }}</span>
+        <b>{{ f.description }}</b>
+        <span class="muted">({{ f.agent }})</span>
+        {% if f.evidence %}<div class="evidence">Evidence: {{ f.evidence }}</div>{% endif %}
+        {% if f.evidence_refs %}<div class="evidence">Refs: {% for r in f.evidence_refs %}<a class="ev-chip" href="#evidence-{{ r }}">{{ r }}</a>{% endfor %}</div>{% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No findings recorded.</p>
+    {% endif %}
+
+    {% if summary.unknowns %}
+    <h3>Unknowns</h3>
+    <ul class="clean">{% for u in summary.unknowns %}<li>{{ u }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    {% if summary.recommended_next_steps %}
+    <h3>Recommended next steps</h3>
+    <ul class="clean">{% for s in summary.recommended_next_steps %}<li>{{ s }}</li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if has_inputs %}
+  <section id="inputs">
+    <h2>Case inputs</h2>
+    {% if problem_statement %}
+    <h3>Problem statement</h3>
+    <p class="scope">{{ problem_statement }}</p>
+    {% endif %}
+    {% if investigation_scope %}
+    <h3>Investigation scope</h3>
+    <p class="scope">{{ investigation_scope }}</p>
+    {% endif %}
+    {% if known_facts %}
+    <h3>Known facts</h3>
+    <ul class="clean">{% for k in known_facts %}<li>{{ k }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if input_file_groups %}
+    <h3>Diagnostic files</h3>
+    <table>
+      <thead><tr><th>Type</th><th>File</th><th>Label</th></tr></thead>
+      <tbody>
+      {% for group in input_file_groups %}
+        {% for file in group.files %}
+        <tr>
+          <td>{% if loop.first %}<b>{{ group.type }}</b>{% endif %}</td>
+          <td style="font-family: ui-monospace, Consolas, monospace; font-size:12px;">{{ file.path }}</td>
+          <td>{{ file.label }}</td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if has_methodology %}
+  <section id="methodology">
+    <h2>Methodology</h2>
+    <p class="muted">How the investigation proceeded: which specialists ran each
+    turn, which were skipped, and how the agent roster was refined.</p>
+
+    {% if problem_window %}
+    <h3>Analysis windows</h3>
+    <p>
+      <strong>Problem:</strong> snaps {{ problem_window.begin_snap }} → {{ problem_window.end_snap }}
+      {% if problem_window.begin_time %}({{ problem_window.begin_time.strftime('%Y-%m-%d %H:%M') }} → {{ problem_window.end_time.strftime('%Y-%m-%d %H:%M') }}){% endif %}
+      {% if baseline_window %}
+      &nbsp;·&nbsp; <strong>Baseline:</strong> snaps {{ baseline_window.begin_snap }} → {{ baseline_window.end_snap }}
+      {% else %}
+      &nbsp;·&nbsp; <em>no baseline — absolute profile</em>
+      {% endif %}
+      {% if baseline_suspect %}
+      <span class="cove-fail"> ⚠ baseline load profile differs &gt;5× — deltas may not be comparable</span>
+      {% endif %}
+    </p>
+    {% endif %}
+    {% if baseline_diff_text %}
+    <h3>Baseline diff (deterministic probe)</h3>
+    <pre style="font-size:12px; overflow-x:auto; background:#f6f6f4; padding:12px; border-radius:6px">{{ baseline_diff_text }}</pre>
+    {% endif %}
+    {% if has_ora_timeline %}
+    <h3>ORA incidents &amp; timeline</h3>
+    <p class="muted">{{ ora_coverage }}</p>
+    {% if ora_not_covered %}
+    <p class="cove-fail">⚠ the alert log does not cover the problem window — window labels below are best-effort.</p>
+    {% endif %}
+    <table>
+      <thead><tr><th>When</th><th>ORA</th><th>Description</th><th>Inst</th><th>Window</th><th>Evidence</th></tr></thead>
+      <tbody>
+      {% for r in ora_rows %}
+        <tr>
+          <td>{{ r.ts }}</td>
+          <td><b>{{ r.code }}</b></td>
+          <td>{{ r.text }}{% if r.incident_id %} <span class="muted">(incident={{ r.incident_id }})</span>{% endif %}</td>
+          <td style="text-align:center">{{ r.instance if r.instance is not none else '' }}</td>
+          <td><span class="{{ r.badge_class }}">{{ r.window }}</span></td>
+          <td class="code">{% if r.evidence_id %}<a class="ev-chip" href="#evidence-{{ r.evidence_id }}">{{ r.evidence_id }}</a>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if active_per_turn %}
+    <h3>Agents active per turn</h3>
+    <table>
+      <thead><tr><th>Turn</th><th>Active agents</th></tr></thead>
+      <tbody>
+      {% for row in active_per_turn %}
+        <tr>
+          <td>{{ row.turn }}</td>
+          <td>{% for a in row.agents %}{{ a.label }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if skipped %}
+    <h3>Skipped by topology probe</h3>
+    <table>
+      <thead><tr><th>Agent</th><th>Reason</th></tr></thead>
+      <tbody>
+      {% for row in skipped %}
+        <tr><td>{{ row.label }}</td><td class="muted">{{ row.reason }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if refinement %}
+    <h3>Refinement log</h3>
+    <table>
+      <thead><tr><th>Turn</th><th>Dropped agent</th><th>Reason</th></tr></thead>
+      <tbody>
+      {% for row in refinement %}
+        <tr><td>{{ row.turn }}</td><td>{{ row.label }}</td><td class="muted">{{ row.reason }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if has_agents %}
+  <section id="findings">
+    <h2>Findings by agent</h2>
+    {% for block in agent_blocks %}
+    <details id="{{ block.anchor }}" {% if block.total_findings %}open{% endif %}>
+      <summary>{{ block.label }}
+        {% if block.total_findings %}<span class="turn-tag">{{ block.total_findings }} finding{{ '' if block.total_findings == 1 else 's' }}</span>
+        {% else %}<span class="abstain">abstained</span>{% endif %}
+      </summary>
+      {% for tf in block.turns %}
+        {% if tf.abstained %}
+          <p class="abstain"><span class="turn-tag">Turn {{ tf.turn }}</span>Abstained{% if tf.abstain_reason %} — {{ tf.abstain_reason }}{% endif %}</p>
+        {% else %}
+          {% for f in tf.findings %}
+          <div class="finding" style="border-left-color: {{ f.severity | sev_color }};">
+            <span class="turn-tag">Turn {{ tf.turn }}</span>
+            <span class="badge" style="background: {{ f.severity | sev_color }};">{{ f.severity }}</span>
+            <span class="code">{{ f.code }}</span>
+            <div>{{ f.description }}</div>
+            {% if f.evidence_refs %}<div class="evidence">Evidence: {% for r in f.evidence_refs %}<a class="ev-chip" href="#evidence-{{ r }}">{{ r }}</a>{% endfor %}{% if f.evidence_note %} — {{ f.evidence_note }}{% endif %}</div>
+            {% elif f.evidence_note %}<div class="evidence">Evidence: {{ f.evidence_note }}</div>
+            {% elif f.uncited %}<div class="ev-uncited">○ uncited — no verified evidence refs</div>{% endif %}
+            {% if f.related_objects %}<div class="objects">Objects: {{ f.related_objects | join(', ') }}</div>{% endif %}
+          </div>
+          {% endfor %}
+          {% if tf.notes %}<p class="muted" style="font-size:13px;"><span class="turn-tag">Turn {{ tf.turn }}</span>{{ tf.notes }}</p>{% endif %}
+        {% endif %}
+      {% endfor %}
+    </details>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if has_dialogue %}
+  <section id="dialogue">
+    <h2>Analyst dialogue</h2>
+    {% if agent_questions %}
+    <h3>Questions raised by agents</h3>
+    <ul class="clean">
+      {% for q in agent_questions %}
+      <li><span class="turn-tag">Turn {{ q.turn }}</span><b>{{ q.agent }}:</b> {{ q.question }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if chat_log %}
+    <h3>Conversation</h3>
+    {% for msg in chat_log %}
+    <div class="chat-msg chat-{{ msg.sender }}">
+      <div class="who">{{ msg.sender }}{% if msg.agent %} · {{ msg.agent }}{% endif %}{% if msg.turn %} · turn {{ msg.turn }}{% endif %} · {{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</div>
+      <div class="text">{{ msg.text }}</div>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if has_verification %}
+  <section id="verification">
+    <h2>Hypotheses &amp; verification</h2>
+
+    {% if hypotheses %}
+    <h3>Competing hypotheses</h3>
+    <table>
+      <thead><tr><th>ID</th><th>Statement</th><th>Posterior</th></tr></thead>
+      <tbody>
+      {% for h in hypotheses %}
+        <tr><td>{{ h.hyp_id }}</td><td>{{ h.statement }}</td>
+            <td>{{ '%.0f%%' | format(h.posterior * 100) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if contradiction_resolutions %}
+    <h3>Contradiction resolutions</h3>
+    {% for r in contradiction_resolutions %}
+      <p>{{ r.hyp_a }} vs {{ r.hyp_b }} —
+        {% if r.inconclusive %}<b>inconclusive</b>{% else %}favored <b>{{ r.favored_hyp_id }}</b>
+        ({{ '%.0f%%' | format(r.posterior_a * 100) }} / {{ '%.0f%%' | format(r.posterior_b * 100) }}){% endif %}</p>
+      <p class="muted">{{ r.reasoning }}</p>
+    {% endfor %}
+    {% endif %}
+
+    {% if verification and verification.verifications %}
+    <h3>Evidence replay of top findings</h3>
+    <p class="muted">Confidence factor applied: {{ '%.2f' | format(verification.applied_confidence_factor) }}
+       (support score {{ '%.0f%%' | format(verification.support_score * 100) }}).</p>
+    <table>
+      <thead><tr><th>Finding</th><th>Verdict</th><th>Reasoning</th></tr></thead>
+      <tbody>
+      {% for v in verification.verifications %}
+        <tr><td>{{ v.claim }}</td>
+            <td class="verdict-{{ v.verdict }}">{{ v.verdict }}{% if v.evidence_truncated %} ⚠{% endif %}</td>
+            <td class="muted">{{ v.reasoning }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if has_evidence %}
+  <section id="evidence">
+    <h2>Evidence ledger</h2>
+    <p class="muted">Every data access performed during this case — including
+    queries no finding cited, failures, and guard rejections.
+    {{ evidence_records | length }} records.</p>
+    {% for r in evidence_records %}
+    <div class="finding" id="evidence-{{ r.id }}">
+      <b>{{ r.id }}</b> · {{ r.label }}{% if r.turn %} · turn {{ r.turn }}{% endif %} · {{ r.kind }}
+      {% if r.window %} · {{ r.window }}{% endif %}
+      {% if r.row_count is not none %} · {{ r.row_count }} rows{% endif %}
+      · {{ r.duration_ms }} ms
+      {% if r.hits %} · ⚡{{ r.hits }} cache hit{{ '' if r.hits == 1 else 's' }}{% endif %}
+      {% if r.status != 'ok' %} <span class="badge" style="background:#b03a2e;">{{ r.status }}</span>{% endif %}
+      {% if not r.cited %} <span class="ev-uncited">(not cited)</span>{% endif %}
+      {% if r.sql %}<pre class="ev-sql">{{ r.sql }}</pre>{% endif %}
+      {% if r.path %}<div class="ev-meta">{{ r.path }} @{{ r.offset }}</div>{% endif %}
+      {% if r.error %}<div class="evidence">{{ r.error }}</div>{% endif %}
+      {% if r.sample_rows %}
+      <details>
+        <summary>rows ({% if r.sample_truncated %}showing {{ r.sample_rows | length }} of {{ r.row_count }}{% else %}{{ r.sample_rows | length }}{% endif %})</summary>
+        <table>
+          <thead><tr>{% for c in r.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+          <tbody>
+          {% for row in r.sample_rows %}
+            <tr>{% for c in r.columns %}<td>{{ row.get(c, '') }}</td>{% endfor %}</tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </details>
+      {% endif %}
+      {% if r.content_excerpt %}<pre class="ev-sql">{{ r.content_excerpt }}</pre>{% endif %}
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+</main>
+</body>
+</html>

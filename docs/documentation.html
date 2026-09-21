@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Observa Handbook</title>
+<meta name="description" content="Installation, configuration reference and operating guide for Observa, the Oracle Database performance post-mortem TUI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* ---------------------------------------------------------------------------
+   Palette derived from Flexoki (Steph Ango) — the theme Observa's TUI ships
+   with, so the docs and the product read as one artifact.
+--------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --bg:        #FFFCF0;
+  --surface:   #F2F0E5;
+  --surface-2: #E6E4D9;
+  --line:      #DAD8CE;
+  --line-soft: #E6E4D9;
+  --ink:       #100F0F;
+  --ink-2:     #3A3937;
+  --muted:     #6F6E69;
+  --accent:    #205EA6;
+  --accent-bg: #E1ECF7;
+  --warn:      #AD8301;
+  --warn-bg:   #FAF0D3;
+  --danger:    #AF3029;
+  --danger-bg: #FBE4E0;
+  --ok:        #24837B;
+  --ok-bg:     #DDF1EC;
+  --code-bg:   #F2F0E5;
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg:        #100F0F;
+    --surface:   #1C1B1A;
+    --surface-2: #232221;
+    --line:      #343331;
+    --line-soft: #282726;
+    --ink:       #CECDC3;
+    --ink-2:     #B7B5AC;
+    --muted:     #878580;
+    --accent:    #4385BE;
+    --accent-bg: #16253A;
+    --warn:      #D0A215;
+    --warn-bg:   #2B2413;
+    --danger:    #D14D41;
+    --danger-bg: #331B17;
+    --ok:        #3AA99F;
+    --ok-bg:     #12282A;
+    --code-bg:   #1C1B1A;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #100F0F;
+  --surface:   #1C1B1A;
+  --surface-2: #232221;
+  --line:      #343331;
+  --line-soft: #282726;
+  --ink:       #CECDC3;
+  --ink-2:     #B7B5AC;
+  --muted:     #878580;
+  --accent:    #4385BE;
+  --accent-bg: #16253A;
+  --warn:      #D0A215;
+  --warn-bg:   #2B2413;
+  --danger:    #D14D41;
+  --danger-bg: #331B17;
+  --ok:        #3AA99F;
+  --ok-bg:     #12282A;
+  --code-bg:   #1C1B1A;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; height: auto; }
+
+/* --- Shell ---------------------------------------------------------------- */
+.shell {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 48px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: 24px;
+  padding-block: 0 96px;
+}
+
+/* --- Masthead ------------------------------------------------------------- */
+.masthead {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 18px;
+  padding-block: 56px 20px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 44px;
+}
+.masthead h1 {
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+.masthead .lede {
+  flex: 1 1 340px;
+  margin: 0;
+  color: var(--muted);
+  font-size: .95rem;
+  line-height: 1.55;
+}
+.masthead .ver {
+  font-family: var(--mono);
+  font-size: .72rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 2px 7px;
+}
+
+/* --- Nav rail ------------------------------------------------------------- */
+.rail {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding-block: 4px 40px;
+  font-family: var(--mono);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+.rail h2 {
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  margin: 22px 0 8px;
+}
+.rail h2:first-child { margin-top: 0; }
+.rail a {
+  display: block;
+  padding: 3px 0 3px 11px;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-left: 2px solid var(--line-soft);
+}
+.rail a:hover { color: var(--accent); border-left-color: var(--accent); }
+.rail a.on { color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+.rail a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* --- Content -------------------------------------------------------------- */
+main { min-width: 0; max-width: 74ch; }
+section { scroll-margin-top: 24px; margin-bottom: 56px; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+}
+h3 {
+  font-size: 1.07rem;
+  font-weight: 600;
+  margin: 32px 0 10px;
+  text-wrap: balance;
+}
+h4 {
+  font-family: var(--mono);
+  font-size: .82rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--accent);
+  margin: 26px 0 8px;
+}
+p { margin: 0 0 14px; }
+a { color: var(--accent); text-underline-offset: 2px; }
+ul, ol { margin: 0 0 14px; padding-left: 22px; }
+li { margin-bottom: 6px; }
+strong { font-weight: 600; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 44px 0; }
+
+code {
+  font-family: var(--mono);
+  font-size: .855em;
+  background: var(--code-bg);
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+pre {
+  font-family: var(--mono);
+  font-size: .82rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 0 0 16px;
+}
+pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+pre .c { color: var(--muted); }
+pre .k { color: var(--accent); }
+
+/* --- Tables --------------------------------------------------------------- */
+.scroller { overflow-x: auto; margin: 0 0 18px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 9px 14px 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+th {
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  border-bottom-color: var(--line);
+  white-space: nowrap;
+}
+td code { white-space: nowrap; }
+
+/* --- Parameter rows (deliberately not cards) ------------------------------ */
+.params { border-top: 1px solid var(--line); margin-bottom: 20px; }
+.param {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 4px 24px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.param > .key {
+  font-family: var(--mono);
+  font-size: .82rem;
+  font-weight: 500;
+  color: var(--ink);
+  word-break: break-word;
+}
+.param > .key .meta {
+  display: block;
+  margin-top: 5px;
+  font-size: .7rem;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: .02em;
+}
+.param > .body { font-size: .92rem; }
+.param > .body p { margin: 0 0 8px; }
+.param > .body p:last-child { margin-bottom: 0; }
+
+/* --- Chips ---------------------------------------------------------------- */
+.chip {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .04em;
+  padding: 1px 6px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.chip.default { background: var(--surface-2); color: var(--ink-2); border-color: var(--line); }
+.chip.warn    { background: var(--warn-bg);   color: var(--warn);  border-color: var(--warn); }
+.chip.danger  { background: var(--danger-bg); color: var(--danger);border-color: var(--danger); }
+.chip.ok      { background: var(--ok-bg);     color: var(--ok);    border-color: var(--ok); }
+.chip.accent  { background: var(--accent-bg); color: var(--accent);border-color: var(--accent); }
+
+/* --- Callouts ------------------------------------------------------------- */
+.note {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-bg);
+  padding: 13px 16px;
+  margin: 0 0 18px;
+  font-size: .92rem;
+  border-radius: 0 3px 3px 0;
+}
+.note.caution { border-left-color: var(--warn);   background: var(--warn-bg); }
+.note.stop    { border-left-color: var(--danger); background: var(--danger-bg); }
+.note p:last-child { margin-bottom: 0; }
+.note .tag {
+  display: block;
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  color: var(--accent);
+}
+.note.caution .tag { color: var(--warn); }
+.note.stop .tag    { color: var(--danger); }
+
+/* --- Numbered setup steps (a real sequence, hence numbered) --------------- */
+.steps { counter-reset: step; list-style: none; padding: 0; margin: 0; }
+.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 42px;
+  margin-bottom: 34px;
+}
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+}
+.steps > li > h3 { margin-top: 0; }
+
+/* --- Pipeline diagram ----------------------------------------------------- */
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: .74rem;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin-bottom: 18px;
+}
+.flow .n {
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg);
+  white-space: nowrap;
+}
+.flow .n.probe { border-color: var(--ok);     color: var(--ok); }
+.flow .n.turn  { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.flow .n.opt   { border-style: dashed; color: var(--muted); }
+.flow .arr { color: var(--muted); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: .8rem;
+  color: var(--muted);
+  margin: -8px 0 18px;
+}
+.legend span::before {
+  content: "";
+  display: inline-block;
+  width: 9px; height: 9px;
+  margin-right: 6px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  vertical-align: baseline;
+}
+.legend .l-probe { color: var(--ok); }
+.legend .l-turn  { color: var(--accent); }
+.legend .l-opt   { color: var(--muted); }
+
+/* --- Synthetic terminal mockups -------------------------------------------
+   Deliberately single-theme: these represent a terminal, so they stay dark on
+   a light page and paint every colour explicitly. All data is invented — no
+   screenshot of a real diagnostic run may ever ship here. */
+.term {
+  background: #100F0F;
+  border: 1px solid #343331;
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 0 0 10px;
+}
+.term-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: #1C1B1A;
+  border-bottom: 1px solid #282726;
+  font-family: var(--mono);
+  font-size: .7rem;
+  color: #878580;
+}
+.term-bar .dots { display: flex; gap: 5px; }
+.term-bar .dots i { width: 9px; height: 9px; border-radius: 50%; background: #343331; }
+.term-bar .name { color: #B7B5AC; }
+.term-bar .clock { margin-left: auto; }
+.term pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #100F0F;
+  color: #CECDC3;
+  font-size: .745rem;
+  line-height: 1.55;
+  padding: 13px 14px;
+  white-space: pre;
+}
+.term .t  { color: #878580; }                    /* timestamps, chrome      */
+.term .ag { color: #4385BE; font-weight: 600; }  /* agent tag               */
+.term .cr { color: #D14D41; font-weight: 600; }  /* critical / high         */
+.term .md { color: #D0A215; font-weight: 600; }  /* medium                  */
+.term .lo { color: #879A39; }                    /* low / info / ok         */
+.term .cy { color: #3AA99F; }                    /* headings, labels        */
+.term .mg { color: #CE5D97; }                    /* codes                   */
+.term .or { color: #DA702C; }                    /* emphasis                */
+.term .dim{ color: #6F6E69; }
+.mock-note {
+  font-size: .78rem;
+  color: var(--muted);
+  margin: 0 0 22px;
+}
+
+footer {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+/* --- Narrow ---------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .masthead { padding-block: 36px 18px; margin-bottom: 0; }
+  .rail {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding-block: 10px;
+    margin-bottom: 32px;
+  }
+  .rail h2 { display: none; }
+  .rail a { border-left: 0; border-bottom: 2px solid transparent; padding: 2px 0; }
+  .rail a:hover, .rail a.on { border-left: 0; border-bottom-color: var(--accent); }
+  main { max-width: none; }
+  .param { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="masthead">
+    <h1>Observa Handbook</h1>
+    <span class="ver">v0.1.0</span>
+    <p class="lede">Installation, the complete configuration reference, and how a diagnostic case actually runs. For the short version, see the <a href="../README.md">README</a>.</p>
+  </header>
+
+  <nav class="rail" aria-label="Contents">
+    <h2>Start</h2>
+    <a href="#concept">The idea</a>
+    <a href="#model">AWR repository model</a>
+    <a href="#requirements">Requirements</a>
+    <a href="#install">Installation</a>
+    <a href="#setup">Setup</a>
+    <h2>Reference</h2>
+    <a href="#cfg-oracle">oracle</a>
+    <a href="#cfg-llm">llm</a>
+    <a href="#cfg-turns">turns</a>
+    <a href="#cfg-case">case</a>
+    <a href="#cfg-agents">agents</a>
+    <a href="#cfg-mcp">mcp</a>
+    <a href="#cfg-ui">ui</a>
+    <a href="#env">Environment</a>
+    <h2>Operating</h2>
+    <a href="#running">Running a case</a>
+    <a href="#pipeline">The pipeline</a>
+    <a href="#evidence">Evidence ledger</a>
+    <a href="#guardrails">Guardrails</a>
+    <a href="#output">Output</a>
+    <a href="#troubleshooting">Troubleshooting</a>
+  </nav>
+
+  <main>
+
+    <!-- ================================================================== -->
+    <section id="concept">
+      <p class="eyebrow">What it is</p>
+      <h2>A post-mortem cockpit, not a monitor</h2>
+      <p>Observa exists for one situation: the incident is over, somebody wants an explanation, and all you have is an AWR export and a pile of logs. You describe the problem, point it at an AWR repository, and a team of specialist LLM agents works the case across several reflection turns — querying <code>DBA_HIST_*</code>, grepping the files you attached, publishing findings to a shared blackboard that the other specialists read before their next turn.</p>
+      <p>What separates it from pasting an AWR report into a chat window is that <strong>every claim is traceable</strong>. Each query and each file read is logged with a stable identifier; findings cite those identifiers; references to evidence that was never gathered are dropped before you ever see them. A finding that survives with no citation is displayed as <code>○ uncited</code> rather than quietly blending in with the ones that earned their place.</p>
+      <p>Observa does not decide anything. It produces a hypothesis with its working shown, for a DBA to accept or reject.</p>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="model">
+      <p class="eyebrow">Prerequisite concept</p>
+      <h2>The AWR repository model</h2>
+      <p>Observa expects to connect to an AWR <em>repository</em> — a separate database into which you imported the production system's AWR data with <code>awrload.sql</code>, after extracting it there with <code>awrextr.sql</code>. It does not connect to the ailing database itself.</p>
+      <p>This single decision explains most of the product's behaviour:</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Rule</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td><code>V$</code> / <code>GV$</code> rejected</td><td>They describe the repository instance you are connected to — the wrong machine entirely.</td></tr>
+            <tr><td>Every query filters <code>dbid</code></td><td>One repository can hold snapshots from many source databases.</td></tr>
+            <tr><td>Version and topology from <code>DBA_HIST_DATABASE_INSTANCE</code></td><td>The historical record of the source instance, rather than the local one.</td></tr>
+            <tr><td>Zero rows is a valid answer</td><td>Specialists abstain on an empty result instead of reporting a broken connection.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note stop">
+        <span class="tag">Licensing</span>
+        <p>Querying <code>DBA_HIST_*</code> / AWR requires the <strong>Oracle Diagnostics Pack</strong>, licensed separately from the database. Observa neither grants nor verifies that entitlement. Confirming that your organization is licensed for the data you point it at is your responsibility.</p>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="requirements">
+      <p class="eyebrow">Before you start</p>
+      <h2>Requirements</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Component</th><th>Version</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Python</td><td>3.12+</td><td>Managed by <a href="https://docs.astral.sh/uv/">uv</a>.</td></tr>
+            <tr><td>Oracle SQLcl</td><td>25.x or newer</td><td>The only path to the database. Needs a JRE, per SQLcl's own requirements.</td></tr>
+            <tr><td>AWR repository</td><td>any supported release</td><td>Reachable through a SQLcl <em>saved connection</em>.</td></tr>
+            <tr><td>LLM access</td><td>—</td><td>Anthropic, OpenAI, or OCI Generative AI.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>There is no database schema to create, no migration to run and no server to keep alive. Observa stores nothing between runs — see <a href="#output">Output</a>.</p>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="install">
+      <p class="eyebrow">Getting it</p>
+      <h2>Installation</h2>
+<pre><code><span class="c"># clone and install</span>
+git clone https://github.com/fmelodb/observa
+cd observa
+uv sync --group dev
+
+<span class="c"># only if you plan to use OCI Generative AI</span>
+uv sync --extra oci</code></pre>
+      <p>The <code>oci</code> extra pulls the Oracle Cloud SDK and <code>langchain-community</code>. Skip it entirely if you are on Anthropic or OpenAI.</p>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="setup">
+      <p class="eyebrow">First run</p>
+      <h2>Setup</h2>
+      <ol class="steps">
+
+        <li>
+          <h3>Register a SQLcl saved connection</h3>
+          <p>Observa connects <strong>by name</strong> — it never assembles a connect string of its own, and it never handles your database password. Create the connection once, in SQLcl:</p>
+<pre><code>&lt;sqlcl_path&gt;/sql /nolog
+SQL&gt; connect observa/&lt;password&gt;@&lt;host&gt;:&lt;port&gt;/&lt;service&gt;
+SQL&gt; conn -save observa
+SQL&gt; exit</code></pre>
+          <p>The name you pass to <code>conn -save</code> is what goes into <code>mcp.sqlcl_connection_name</code>. If that name doesn't exist, Observa fails at startup with an error listing the connections SQLcl actually has saved — it will not fall back or guess.</p>
+          <div class="note">
+            <span class="tag">Why NLS gets normalized</span>
+            <p>Immediately after connecting, Observa issues a fixed set of <code>ALTER SESSION</code> statements pinning the date, timestamp and numeric formats. This is not cosmetic. In a comma-decimal locale (pt-BR, de-DE and friends) the default formats embed commas inside values, which corrupts SQLcl's CSV output and silently shifts columns.</p>
+          </div>
+        </li>
+
+        <li>
+          <h3>Create your config file</h3>
+<pre><code>cp config/config.example.yaml config/config.yaml</code></pre>
+          <p><code>config/config.yaml</code> is git-ignored: it holds absolute paths and, if you use OCI, a compartment OCID that identifies your tenancy. The template is committed; your filled-in copy is not.</p>
+        </li>
+
+        <li>
+          <h3>Set your provider credentials</h3>
+          <p>One LLM key is mandatory. See <a href="#env">Environment</a> for the full list.</p>
+<pre><code>export ANTHROPIC_API_KEY=sk-ant-...
+<span class="c"># optional — only used by `setup check` to probe the repository</span>
+export ORACLE_PWD=...</code></pre>
+        </li>
+
+        <li>
+          <h3>Run the pre-flight check</h3>
+<pre><code>uv run observa setup check</code></pre>
+          <p>It verifies, independently: the Python dependencies, the LLM API key for every model your config references, the config file itself, the SQLcl binary, the existence of the saved connection, OCI credentials when the OCI provider is configured, and Oracle reachability.</p>
+          <p><span class="chip ok">[OK]</span> proceeds. <span class="chip warn">[WARN]</span> is survivable — a missing <code>ORACLE_PWD</code> only disables the connectivity probe. <span class="chip danger">[FAIL]</span> must be resolved; the command exits non-zero.</p>
+        </li>
+
+      </ol>
+    </section>
+
+    <hr>
+
+    <!-- ================================================================== -->
+    <section id="cfg-oracle">
+      <p class="eyebrow">Configuration reference</p>
+      <h2><code>oracle:</code></h2>
+      <p>Used <strong>only</strong> by <code>observa setup check</code>, to prove the repository is reachable. Agents never touch these values — they go through SQLcl's saved connection. Getting this section wrong degrades a health check, nothing more.</p>
+      <div class="params">
+        <div class="param">
+          <div class="key">host<span class="meta">string</span></div>
+          <div class="body"><p>Hostname or IP of the AWR repository.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">port<span class="meta">int · <span class="chip default">1521</span></span></div>
+          <div class="body"><p>Listener port.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">service_name<span class="meta">string</span></div>
+          <div class="body"><p>Service name, not SID.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">user<span class="meta">string</span></div>
+          <div class="body"><p>Schema used for the probe. Read-only access to <code>DBA_HIST_*</code> is enough.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">password_env<span class="meta">string · <span class="chip default">ORACLE_PWD</span></span></div>
+          <div class="body"><p>The <em>name of the environment variable</em> holding the password — never the password itself. Observa reads the variable at check time; the config file stays safe to share.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="cfg-llm">
+      <p class="eyebrow">Configuration reference</p>
+      <h2><code>llm:</code></h2>
+      <p>Models are assigned <strong>per slot</strong>, not globally. A case runs cheap models across the parallel fan-out and a stronger one for consolidation, which is where the reasoning actually matters.</p>
+
+      <h4>The five slots</h4>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Slot</th><th>Used by</th><th>Needs tools</th><th>Needs structured output</th></tr></thead>
+          <tbody>
+            <tr><td><code>agent</code></td><td>Every specialist in every turn</td><td>yes</td><td>yes</td></tr>
+            <tr><td><code>consolidator</code></td><td>The Master writing the final summary</td><td>no</td><td>yes</td></tr>
+            <tr><td><code>hypotheses</code></td><td>Hypothesis synthesis + contradiction resolution</td><td>no</td><td>yes</td></tr>
+            <tr><td><code>cove</code></td><td>The replay-verification pass</td><td>no</td><td>yes</td></tr>
+            <tr><td><code>master_chat</code></td><td>Post-analysis chat</td><td>yes</td><td>no</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Any slot left empty falls back to the default provider's model. Slot requirements are enforced <em>before</em> a case opens: an OCI model that cannot do tool calling assigned to the <code>agent</code> slot is a startup error listing the compatible alternatives, not a failure three minutes into a run.</p>
+
+      <div class="params">
+        <div class="param">
+          <div class="key">default_provider<span class="meta"><span class="chip accent">anthropic</span> <span class="chip accent">openai</span> <span class="chip accent">oci</span></span></div>
+          <div class="body"><p>Which entry under <code>providers:</code> supplies the model for any slot without an override.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">consolidator_model<br>hypotheses_model<br>cove_model<br>master_chat_model<span class="meta">string · <span class="chip default">""</span></span></div>
+          <div class="body">
+            <p>Per-slot overrides. A bare id (<code>claude-sonnet-4-6</code>) resolves against the named providers; an <code>oci/</code> prefix routes through OCI Generative AI regardless of <code>default_provider</code>.</p>
+            <p>Example: <code>master_chat_model: "oci/google.gemini-2.5-pro"</code>.</p>
+          </div>
+        </div>
+        <div class="param">
+          <div class="key">agent_models<span class="meta">map · <span class="chip default">{}</span></span></div>
+          <div class="body">
+            <p>Per-specialist overrides, keyed by agent name. Anything absent uses the default.</p>
+<pre><code>agent_models:
+  sql: "oci/xai.grok-4-fast-reasoning"
+  file_reader: "claude-sonnet-4-6"</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <h4>providers.anthropic / providers.openai</h4>
+      <div class="params">
+        <div class="param">
+          <div class="key">model<span class="meta">string</span></div>
+          <div class="body"><p>Model id for that provider.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">api_key_env<span class="meta">string</span></div>
+          <div class="body"><p>Name of the environment variable holding the key. Checked at boot for every referenced model.</p></div>
+        </div>
+      </div>
+
+      <h4>providers.oci</h4>
+      <p>Requires <code>uv sync --extra oci</code> and a configured <code>~/.oci/config</code>.</p>
+      <div class="params">
+        <div class="param">
+          <div class="key">model<span class="meta">string</span></div>
+          <div class="body">
+            <p>Default OCI model id. Validated against the capability matrix in <code>observa/llm/oci_capabilities.py</code>, which lists only combinations verified to support tool calling and structured output: the <code>cohere.command-*</code>, <code>xai.grok-4-fast-*</code>, <code>google.gemini-2.5-*</code> and <code>openai.gpt-5.*</code> families.</p>
+            <p><code>meta.llama-*</code> is deliberately absent: tool calling is unimplemented in the underlying provider.</p>
+          </div>
+        </div>
+        <div class="param">
+          <div class="key">compartment_id<span class="meta">OCID</span></div>
+          <div class="body"><p>Compartment that holds your Generative AI entitlement. Identifies your tenancy — a reason <code>config.yaml</code> stays out of version control.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">service_endpoint<span class="meta">URL</span></div>
+          <div class="body"><p>Regional inference endpoint, e.g. <code>https://inference.generativeai.sa-saopaulo-1.oci.oraclecloud.com</code>.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">auth_profile<span class="meta">string · <span class="chip default">DEFAULT</span></span></div>
+          <div class="body"><p>Profile name inside <code>~/.oci/config</code>.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">auth_type<span class="meta">string · <span class="chip default">API_KEY</span></span></div>
+          <div class="body"><p>OCI authentication method.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="cfg-turns">
+      <p class="eyebrow">Configuration reference</p>
+      <h2><code>turns:</code></h2>
+      <p>The three knobs that decide what a case costs in tokens and wall-clock time.</p>
+      <div class="params">
+        <div class="param">
+          <div class="key">count<span class="meta">int · <span class="chip default">2</span></span></div>
+          <div class="body">
+            <p>How many reflection turns to run. Turn 1 is cold — every active specialist works from the problem statement and the deterministic probes. From turn 2 on, each agent reads the blackboard digest of what everyone else found, which is where cross-specialty reasoning appears.</p>
+            <p>One turn is a fan-out, not an investigation. Three is thorough and roughly 50% more expensive than two.</p>
+          </div>
+        </div>
+        <div class="param">
+          <div class="key">time_budget_seconds<span class="meta">int · <span class="chip default">120</span></span></div>
+          <div class="body">
+            <p>Per-turn watchdog. An agent that overruns is cancelled and records an explicit abstain with the reason — it never becomes a silent gap in the blackboard.</p>
+            <p>Raise it for slow reasoning models or a loaded repository; agents that consistently time out produce nothing but still cost tokens.</p>
+          </div>
+        </div>
+        <div class="param">
+          <div class="key">max_concurrent_agents<span class="meta">int · <span class="chip default">4</span></span></div>
+          <div class="body"><p>How many specialists may call the LLM at once. This is your rate-limit valve: too high and you spend the turn in 429-backoff, which the wrapper handles by sleeping 60 seconds per retry.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="cfg-case">
+      <p class="eyebrow">Configuration reference</p>
+      <h2><code>case:</code></h2>
+      <p>Defaults for the intake screen's snapshot timeline.</p>
+      <div class="params">
+        <div class="param">
+          <div class="key">timeline_days<span class="meta">int · <span class="chip default">15</span></span></div>
+          <div class="body"><p>How much snapshot history to plot on the intake timeline. Only affects what you can see and click when choosing windows.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">baseline_offset_days<span class="meta">int · <span class="chip default">7</span></span></div>
+          <div class="body"><p>The auto-suggested baseline is the same time-of-day range this many days before the problem window. Seven lands on the same weekday, which usually matches the workload shape better than yesterday does. You can always override the suggestion by hand.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="cfg-agents">
+      <p class="eyebrow">Configuration reference</p>
+      <h2><code>agents:</code></h2>
+
+      <div class="params">
+        <div class="param">
+          <div class="key">enable_hypotheses<span class="meta">bool · <span class="chip default">true</span></span></div>
+          <div class="body"><p>Runs hypothesis synthesis and contradiction detection after consolidation. Disabling it skips straight from the summary to verification.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">enable_cove<span class="meta">bool · <span class="chip default">true</span></span></div>
+          <div class="body"><p>Runs the replay-verification pass — the mechanical tail that re-executes each cited piece of evidence and checks whether it actually supports the claim. Turning it off makes runs faster and the confidence figure less trustworthy.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">contradiction_threshold<span class="meta">float 0–1 · <span class="chip default">0.3</span></span></div>
+          <div class="body"><p>How much two hypotheses must conflict before a resolution round is triggered. Lower means more debates.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">verification_support_threshold<span class="meta">float 0–1 · <span class="chip default">0.7</span></span></div>
+          <div class="body"><p>If the verification pass scores evidential support at or above this, confidence is left alone. Below it, the support score itself becomes a multiplier applied to the summary's confidence — a summary whose evidence half held up reports roughly half the confidence.</p></div>
+        </div>
+      </div>
+
+      <h4>agents.refinement</h4>
+      <p>Between turns, Observa decides which specialists are still worth running. This is the main cost control in a long case: an agent that found nothing and that nobody referenced does not get a second turn.</p>
+      <div class="params">
+        <div class="param">
+          <div class="key">enabled<span class="meta">bool · <span class="chip default">true</span></span></div>
+          <div class="body"><p>Turn off to run every enabled agent in every turn.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">universal_agents<span class="meta">list · <span class="chip default">[wait_time, ash]</span></span></div>
+          <div class="body"><p>Never dropped, whatever they found. Wait time and ASH are the orientation instruments for any Oracle performance case; losing them mid-investigation blinds everyone else.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">keep_severities<span class="meta">list · <span class="chip default">[high, critical]</span></span></div>
+          <div class="body"><p>A finding at one of these severities keeps its author active for the next turn.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">enable_cross_reference<span class="meta">bool · <span class="chip default">true</span></span></div>
+          <div class="body"><p>Also keeps an agent when another specialist's findings mention its territory — so the I/O agent survives if the SQL agent starts talking about physical reads, even though I/O itself found nothing yet.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">min_active<span class="meta">int · <span class="chip default">4</span></span></div>
+          <div class="body"><p>Safety floor. Refinement will never reduce the roster below this many agents.</p></div>
+        </div>
+      </div>
+
+      <h4>agents.enabled</h4>
+      <p>A master switch per specialist. Note that the <code>topology_probe</code> already skips agents whose subsystem is absent — there is no need to disable <code>rac</code>, <code>exadata</code> or <code>dg</code> on a single-instance non-Exadata database; the probe does it and records why.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Key</th><th>Specialist</th><th>Territory</th></tr></thead>
+          <tbody>
+            <tr><td><code>wait_time</code></td><td>Wait Time</td><td>Wait-event profile and time model. Always active.</td></tr>
+            <tr><td><code>ash</code></td><td>Active Session History</td><td>Session-level sampling, blockers, top consumers. Always active.</td></tr>
+            <tr><td><code>sql</code></td><td>SQL &amp; Plans</td><td>Statement-level regressions and plan changes.</td></tr>
+            <tr><td><code>io_storage</code></td><td>I/O &amp; Storage</td><td>Read/write latency, tablespace and file-level pressure.</td></tr>
+            <tr><td><code>memory</code></td><td>Memory (SGA/PGA)</td><td>Pool sizing, advisories, hard-parse and cache pressure.</td></tr>
+            <tr><td><code>concurrency</code></td><td>Concurrency</td><td>Locks, enqueues, latches, mutex contention.</td></tr>
+            <tr><td><code>segment_object</code></td><td>Segment &amp; Object</td><td>Hot segments, growth, per-object statistics.</td></tr>
+            <tr><td><code>infra</code></td><td>Infrastructure</td><td>Host CPU, memory and OS-level signals in the AWR record.</td></tr>
+            <tr><td><code>rac</code></td><td>RAC &amp; Cache Fusion</td><td>Interconnect, global cache, cross-instance skew.</td></tr>
+            <tr><td><code>exadata</code></td><td>Exadata</td><td>Cell offload, smart scan, flash cache.</td></tr>
+            <tr><td><code>dg</code></td><td>Data Guard</td><td>Redo transport and apply lag.</td></tr>
+            <tr><td><code>file_reader</code></td><td>Diagnostic Files Reader</td><td>Alert logs, traces, TFA bundles, hanganalyze dumps and the other attachments.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="cfg-mcp">
+      <p class="eyebrow">Configuration reference</p>
+      <h2><code>mcp:</code></h2>
+      <div class="params">
+        <div class="param">
+          <div class="key">sqlcl_path<span class="meta">absolute path</span></div>
+          <div class="body">
+            <p>The SQLcl launcher — <code>sql.exe</code> on Windows, <code>sql</code> elsewhere. Observa spawns it as an MCP stdio subprocess; it is never on your <code>PATH</code> by assumption.</p>
+<pre><code><span class="c"># Windows — note the escaped backslashes</span>
+sqlcl_path: "D:\\sqlcl\\bin\\sql.exe"
+<span class="c"># Linux / macOS</span>
+sqlcl_path: "/opt/sqlcl/bin/sql"</code></pre>
+          </div>
+        </div>
+        <div class="param">
+          <div class="key">sqlcl_connection_name<span class="meta">string</span></div>
+          <div class="body"><p>The saved connection from <a href="#setup">Setup step 1</a>. Observa calls SQLcl's <code>connect</code> tool with this name right after MCP initialization.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">query_row_limit<span class="meta">int · <span class="chip default">50</span></span></div>
+          <div class="body"><p>Hard cap on rows handed back to an agent from any single query. Results are truncated, never silently — the tool payload carries a <code>truncated</code> flag the agent is instructed to respect. Raising this inflates prompt size fast.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">enforce_window<span class="meta"><span class="chip warn">warn</span> <span class="chip danger">reject</span> <span class="chip default">off</span></span></div>
+          <div class="body">
+            <p>What happens when an agent writes a query with no snap-window restriction, so it would scan the whole retention period instead of the incident.</p>
+            <p><span class="chip warn">warn</span> — the default. The query runs and the result carries a warning the agent must account for.<br>
+               <span class="chip danger">reject</span> — the query is refused and the agent must rewrite it. Strictest and cheapest; occasionally blocks a legitimately broad orientation query.<br>
+               <span class="chip default">off</span> — no window checking. The DBID filter is still mandatory regardless of this setting.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="cfg-ui">
+      <p class="eyebrow">Configuration reference</p>
+      <h2><code>ui:</code></h2>
+      <div class="params">
+        <div class="param">
+          <div class="key">theme<span class="meta">string · <span class="chip default">flexoki</span></span></div>
+          <div class="body"><p>Any Textual built-in theme name. Applied when the app starts; an unknown name falls back to <code>flexoki</code>.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="env">
+      <p class="eyebrow">Configuration reference</p>
+      <h2>Environment variables</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Variable</th><th>When</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic models referenced</td><td>API key. The variable name is itself configurable via <code>api_key_env</code>.</td></tr>
+            <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI models referenced</td><td>API key.</td></tr>
+            <tr><td><code>~/.oci/config</code></td><td><code>oci/</code> models referenced</td><td>Not a variable but a file: OCI credentials for the configured <code>auth_profile</code>.</td></tr>
+            <tr><td><code>ORACLE_PWD</code></td><td>optional</td><td>Password for the <code>setup check</code> connectivity probe only. Absent, that one check downgrades to a warning.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Observa loads a <code>.env</code> file from the working directory if present. Both <code>.env</code> and <code>config/config.yaml</code> are git-ignored.</p>
+    </section>
+
+    <hr>
+
+    <!-- ================================================================== -->
+    <section id="running">
+      <p class="eyebrow">Operating</p>
+      <h2>Running a case</h2>
+<pre><code>uv run observa new              <span class="c"># launch the TUI</span>
+uv run observa new --debug      <span class="c"># plus a full trace in observa-debug.log</span>
+uv run observa config show      <span class="c"># effective config, secrets redacted</span>
+uv run observa setup check      <span class="c"># health checks</span></code></pre>
+
+      <h3>What the intake screen asks for</h3>
+      <p>The quality of the run is set here. Agents are held to this text for the whole case.</p>
+      <div class="params">
+        <div class="param">
+          <div class="key">Problem statement<span class="meta">required</span></div>
+          <div class="body"><p>What went wrong, in your words. Symptoms and timing beat theories — "batch job X took 4h instead of 40min, 14:00–18:00" is worth more than "I think it's I/O".</p></div>
+        </div>
+        <div class="param">
+          <div class="key">Investigation scope<span class="meta">required</span></div>
+          <div class="body"><p>The question you want answered. The Master is held strictly to this when consolidating, and will report an unknown rather than drift into an adjacent finding that happens to be interesting.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">Known facts<span class="meta">optional, repeatable</span></div>
+          <div class="body"><p>Anything already established: a deployment, a failover, a storage migration, a parameter change. These enter the prompt as ground truth and stop agents from spending turns rediscovering them.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">DBID + problem window<span class="meta">required</span></div>
+          <div class="body"><p>Chosen from an interactive timeline of the snapshots the repository actually holds, so you cannot select a window with no data behind it.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">Baseline window<span class="meta">auto-suggested</span></div>
+          <div class="body"><p>A healthy comparison period. Agents reason in deltas rather than absolute numbers, which is what makes findings like "physical reads up 11×" possible at all.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">Diagnostic files<span class="meta">optional</span></div>
+          <div class="body">
+            <p>Each tagged by type: <code>alertlog</code>, <code>trace</code>, <code>tfa</code>, <code>hanganalyze</code>, <code>sqlhc</code>, <code>ddl</code>, <code>awr_report</code>.</p>
+            <p>Only the <em>paths</em> are given to the agents. Nothing is parsed, chunked or uploaded — agents list, grep and seek their way through the files themselves, which is why a multi-gigabyte alert log is not a problem.</p>
+          </div>
+        </div>
+      </div>
+      <div class="term">
+        <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="name">observa new</span><span class="clock">02:11:08</span></div>
+<pre>  <span class="or">observa</span>
+  <span class="dim">"Nothing changed." &#8212; every incident, ever</span>
+
+<span class="cy">&#9474; Problem statement</span>
+  <span class="dim">What does the analyst observe? One short paragraph.</span>
+  Nightly billing job ran 4h12m instead of its usual 38m. Users report
+  timeouts between 02:00 and 06:00. Nothing was deployed that night.
+
+<span class="cy">&#9474; Investigation scope</span>
+  Explain the elapsed-time regression of SQL_ID 7xkzm2wq4ftvb during the
+  02:00-06:00 window.
+
+<span class="cy">&#9474; Known facts</span>  <span class="dim">one per line - optional</span>
+  - Input row volume matched the previous successful run.
+  - Storage firmware was patched on 2026-09-14.
+
+<span class="cy">&#9474; DBID</span>
+  1234567890
+
+<span class="cy">&#9474; Diagnostic files</span>  <span class="dim">&lt;type&gt;: &lt;absolute path&gt;</span>
+  <span class="dim">types:</span> <span class="mg">alertlog, trace, tfa, hanganalyze, sqlhc, ddl, awr_report</span>
+  alertlog:   /u01/app/oracle/diag/rdbms/orcl/ORCL2/trace/alert_ORCL2.log
+  awr_report: /home/dba/cases/awr_41820_41833.html
+
+<span class="t">^s Start   esc Cancel</span></pre>
+      </div>
+      <p class="mock-note">Intake. The snapshot timeline sits below these fields; the brush selects the problem and baseline windows. Every value shown is invented.</p>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="pipeline">
+      <p class="eyebrow">Operating</p>
+      <h2>The pipeline</h2>
+      <div class="flow">
+        <span class="n">init</span><span class="arr">→</span>
+        <span class="n probe">topology_probe</span><span class="arr">→</span>
+        <span class="n probe">diff_probe</span><span class="arr">→</span>
+        <span class="n probe">ora_timeline</span><span class="arr">→</span>
+        <span class="n turn">turn_1</span><span class="arr">→</span>
+        <span class="n">gate_1</span><span class="arr">→</span>
+        <span class="n turn">turn_N</span><span class="arr">→</span>
+        <span class="n">consolidate</span><span class="arr">→</span>
+        <span class="n">synthesize_hypotheses</span><span class="arr">→</span>
+        <span class="n">detect_contradictions</span><span class="arr">→</span>
+        <span class="n opt">resolve_contradiction?</span><span class="arr">→</span>
+        <span class="n">replay_verify</span>
+      </div>
+      <div class="legend">
+        <span class="l-probe">deterministic — no LLM</span>
+        <span class="l-turn">parallel agent fan-out</span>
+        <span class="l-opt">conditional</span>
+      </div>
+
+      <h3>The deterministic probes</h3>
+      <p>Three nodes run before any agent sees a prompt. They cost no tokens and they are the reason the fan-out isn't wasted on questions the repository can answer flatly.</p>
+      <div class="params">
+        <div class="param">
+          <div class="key">topology_probe<span class="meta">fail-open</span></div>
+          <div class="body"><p>Reads version, instance list, and RAC / Exadata / Data Guard flags. Specialists whose subsystem is absent are skipped with a recorded reason, before spending a single token.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">diff_probe<span class="meta">fail-open</span></div>
+          <div class="body"><p>Computes problem-versus-baseline deltas and seeds them into every agent's prompt as ground truth for orientation. It also raises a flag when the two windows' load profiles differ so wildly that comparing them is meaningless.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">ora_timeline<span class="meta">fail-open</span></div>
+          <div class="body">
+            <p>Scans the attached alert logs for ORA- and incident lines, labels each as <code>problem</code>, <code>baseline</code> or <code>outside</code>, and computes <strong>coverage</strong>.</p>
+            <p>Coverage is the part that matters: it distinguishes "there were no errors during the incident" from "this log doesn't reach the incident window at all". The first is evidence; the second is a hole, and the report says so.</p>
+          </div>
+        </div>
+      </div>
+      <p>All three fail open. No alert log, no repository answer, no incidents — the node no-ops and the case proceeds.</p>
+
+      <h3>Turns and gates</h3>
+      <p>Each turn fans every active specialist out in parallel under the watchdog. Agents that time out or raise emit an explicit abstain, so the blackboard records <em>that nobody looked</em> rather than leaving a silence that reads like absence of evidence.</p>
+      <p>After each turn, a gate checks whether any agent raised a question for you. If so the run pauses, shows the questions, and your answer joins the blackboard for the remaining turns.</p>
+      <div class="term">
+        <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="name">CASE-2026-0921-01</span><span class="clock">02:15:09</span></div>
+<pre><span class="lo">&#9679;</span> MCP connected
+<span class="cy">Turn 1 &#183; 9 findings &#183; 3 abstains so far</span>
+<span class="t">&#9656; Running turn 1</span>
+
+<span class="t">&#9472;&#9472; Turn 1 &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
+<span class="t">02:14:25</span> <span class="ag">[wait_time]</span> <span class="cr">HIGH</span> <span class="mg">WAIT_PROFILE_SHIFT_TO_IO</span> - 'db file sequential
+         read' rises from 18% to 61% of DB time between good snaps
+         41692-41705 and bad snaps 41820-41833.  <span class="lo">[Q-004, Q-007]</span>
+<span class="t">02:14:31</span> <span class="ag">[io_storage]</span> <span class="cr">CRITICAL</span> <span class="mg">SINGLE_BLOCK_READ_LATENCY_10X</span> - average
+         single-block read latency moved 2.1 ms -&gt; 22.4 ms on the
+         datafiles backing the scoped index.  <span class="lo">[Q-011, Q-014]</span>
+<span class="t">02:14:38</span> <span class="ag">[sql]</span> <span class="cr">HIGH</span> <span class="mg">PLAN_FLIP_TO_NESTED_LOOPS</span> - SQL_ID 7xkzm2wq4ftvb
+         changed plan hash 2913447021 -&gt; 1884330517 at snap 41821,
+         multiplying the count of single-block reads.  <span class="lo">[Q-019]</span>
+<span class="t">02:14:44</span> <span class="ag">[segment_object]</span> <span class="md">MEDIUM</span> <span class="mg">HOT_SEGMENT_INDEX</span> - SALES.IDX_ORDER_DATE
+         accounts for 71% of sampled physical reads in the bad window.
+<span class="t">02:14:51</span> <span class="ag">[memory]</span> <span class="dim">abstained - no SGA/PGA deviation between the windows.</span>
+<span class="t">02:14:58</span> <span class="ag">[concurrency]</span> <span class="dim">abstained - no enqueue or latch signal above baseline.</span>
+<span class="t">02:15:02</span> <span class="ag">[rac]</span> <span class="dim">skipped - single-instance database (topology probe).</span>
+<span class="t">02:15:09</span> <span class="ag">[file_reader]</span> <span class="lo">INFO</span> <span class="mg">ALERT_LOG_QUIET</span> - no ORA- lines inside the
+         problem window; log covers 2026-09-18..2026-09-21.  <span class="lo">[S-002]</span>
+
+<span class="t">q Quit                                              ^p palette</span></pre>
+      </div>
+      <p class="mock-note">A turn in flight: severity, finding code, the claim, and the evidence IDs backing it. Abstains and probe-driven skips are shown as first-class outcomes. Synthetic data.</p>
+
+      <h3>Consolidation and the verification tail</h3>
+      <p>The Master receives the complete blackboard digest and returns a summary of <strong>at most three findings</strong>, tied strictly to the investigation scope, with explicit unknowns and a calibrated confidence. The cap is deliberate: a list of twelve observations is a dump, not a diagnosis.</p>
+      <p>Then the mechanical tail runs. Hypotheses are synthesized and scored, contradictions between them are detected and — past <code>contradiction_threshold</code> — resolved. Finally <code>replay_verify</code> re-executes the evidence each finding cites and scores whether it genuinely supports the claim. Below <code>verification_support_threshold</code>, that score is applied as a multiplier to the reported confidence. A summary built on evidence that didn't survive re-reading says so in its number.</p>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="evidence">
+      <p class="eyebrow">Operating</p>
+      <h2>The evidence ledger</h2>
+      <p>Every tool call is recorded with a stable identifier, returned to the agent as the first field of the payload:</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Prefix</th><th>Access</th><th>Recorded</th></tr></thead>
+          <tbody>
+            <tr><td><code>Q-###</code></td><td><code>query_awr</code></td><td>Canonical SQL, row count, truncation flag, warnings</td></tr>
+            <tr><td><code>F-###</code></td><td><code>read_file</code></td><td>Path, byte offset, extent read</td></tr>
+            <tr><td><code>S-###</code></td><td><code>search_file</code></td><td>Pattern, path, line and byte offsets of each match</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Findings cite these in <code>evidence_refs</code>. References to evidence that was never gathered are dropped during turn validation — an agent cannot invent a citation. Findings that end up with none are rendered <code>○ uncited</code>, in the TUI and in the exported report alike.</p>
+      <p>The ledger also serves as a <strong>within-case cache</strong>, keyed on canonical SQL or on <code>(pattern, path)</code>, and namespaced by access path so that agent queries and internal catalog lookups never serve each other's results. Two agents asking the same question pay for it once.</p>
+      <p>Press <kbd>Ctrl+D</kbd> at any point to open the evidence browser and read any entry in full.</p>
+      <div class="note">
+        <span class="tag">Why search_file matters</span>
+        <p><code>search_file</code> returns both a line number and a byte offset, and that offset feeds straight back into <code>read_file(offset)</code>. An agent finds an ORA-00600 at byte 3.2 billion and jumps directly to its context instead of paging through the log. The scan is capped at 200 matches and 64 MB scanned, with no timeout.</p>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="guardrails">
+      <p class="eyebrow">Operating</p>
+      <h2>Guardrails</h2>
+      <p>Agents write their own SQL — nothing is templated or hard-coded. Every statement is therefore parsed with <code>sqlglot</code> and validated before it reaches the database.</p>
+      <div class="params">
+        <div class="param">
+          <div class="key">Read-only<span class="meta">structural</span></div>
+          <div class="body"><p>Only <code>SELECT</code> and <code>WITH</code> survive. INSERT, UPDATE, DELETE, MERGE, DDL and PL/SQL blocks are rejected by expression type, not by string matching.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">Allowlisted objects<span class="meta">structural</span></div>
+          <div class="body">
+            <p><code>DBA_HIST_*</code>, plus <code>DBA_REGISTRY</code>, <code>DBA_FEATURE_USAGE_STATISTICS</code> and <code>DBA_TAB_COLUMNS</code>. The last is there so agents can look up real column names before writing a query rather than guessing and producing <code>ORA-00904</code>.</p>
+            <p>Extend it by editing <code>ALLOWED_EXACT</code> or <code>ALLOWED_PREFIXES</code> in <code>observa/mcp/allowlist.py</code>. Keep additions read-only and AWR-resident — anything reflecting the <em>local</em> instance defeats the repository model.</p>
+          </div>
+        </div>
+        <div class="param">
+          <div class="key">DBID predicate<span class="meta">mandatory</span></div>
+          <div class="body"><p>Once a case is active, a query without a correct <code>dbid</code> filter is rejected outright. Not configurable.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">Snap-window predicate<span class="meta">configurable</span></div>
+          <div class="body"><p>Governed by <code>mcp.enforce_window</code>. See <a href="#cfg-mcp">mcp</a>.</p></div>
+        </div>
+        <div class="param">
+          <div class="key">Row cap<span class="meta">mandatory</span></div>
+          <div class="body"><p><code>mcp.query_row_limit</code>, with explicit truncation flagged in the result.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="output">
+      <p class="eyebrow">Operating</p>
+      <h2>Output, and why there is no database</h2>
+      <p>From the summary screen you export into the current directory:</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>File</th><th>Contents</th></tr></thead>
+          <tbody>
+            <tr><td><code>&lt;CASE-ID&gt;-report.html</code></td><td>Self-contained report: findings, methodology, the ORA timeline with per-window badges, and the full evidence ledger as an appendix.</td></tr>
+            <tr><td><code>&lt;CASE-ID&gt;-summary.md</code></td><td>The final summary in Markdown, for pasting into a ticket.</td></tr>
+            <tr><td><code>&lt;CASE-ID&gt;-chat.txt</code></td><td>Transcript of the post-analysis conversation.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A case lives in memory for the duration of the session and is then gone. No case database, no checkpointer on disk, no artifact store, no cache that outlives the run. <code>CASE-YYYY-MMDD-NN</code> identifiers exist only to name those three files and tag log lines.</p>
+      <p>This is a deliberate trade. Diagnostic data is frequently sensitive, and a tool that quietly accumulates a corpus of your customers' AWR internals is a liability rather than a feature. If you want durability, export the report.</p>
+      <div class="term">
+        <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="name">CASE-2026-0921-01 &#8212; summary</span><span class="clock">02:22:40</span></div>
+<pre><span class="cy">&#9474; PRIMARY ROOT CAUSE &#183; confidence 71%</span>
+  Single-block read latency on the datafiles backing SALES.IDX_ORDER_DATE
+  rose roughly tenfold in the problem window. A concurrent plan flip to a
+  nested-loops index range scan multiplied the number of those now-slow
+  reads, which is what turned a 38-minute job into a 4-hour one.
+  <span class="dim">confidence 78% &#215; verification support 0.91 = 71%</span>
+
+<span class="cy">&#9474; TOP FINDINGS (3)</span>
+  <span class="cr">[1] CRITICAL</span> <span class="ag">(io_storage)</span> Single-block read latency 2.1 -&gt; 22.4 ms.
+      <span class="dim">evidence: Q-011, Q-014</span>
+  <span class="cr">[2] HIGH</span> <span class="ag">(sql)</span> Plan hash changed at snap 41821, raising read count 14x.
+      <span class="dim">evidence: Q-019</span>
+  <span class="md">[3] MEDIUM</span> <span class="ag">(segment_object)</span> Reads concentrate on one index partition.
+      <span class="dim">&#9675; uncited</span>
+
+<span class="cy">&#9474; UNKNOWNS</span>
+  &#183; No OS-level storage metrics were attached, so the 2026-09-14 firmware
+    patch is correlated with the latency change, not proven to cause it.
+  &#183; Whether the plan flip caused the latency or merely exposed it cannot
+    be settled from AWR history alone.
+
+<span class="cy">&#9474; RECOMMENDED NEXT STEPS</span>
+  <span class="or">R1</span> Compare storage-side service times before and after 2026-09-14.
+  <span class="or">R2</span> Check whether statistics on SALES were gathered near snap 41821.
+
+<span class="t">^n New case                                         ^p palette</span></pre>
+      </div>
+      <p class="mock-note">The summary screen, with the post-analysis chat docked to its right. Note the confidence figure carrying its verification multiplier, and finding [3] flagged <code>&#9675; uncited</code>. Synthetic data.</p>
+    </section>
+
+    <!-- ================================================================== -->
+    <section id="troubleshooting">
+      <p class="eyebrow">Operating</p>
+      <h2>Troubleshooting</h2>
+
+      <h4>Startup fails naming saved connections</h4>
+      <p>The name in <code>mcp.sqlcl_connection_name</code> doesn't exist. The error lists what SQLcl does have saved — pick one of those, or create it with <code>conn -save</code>. Observa refuses to guess.</p>
+
+      <h4>Config rejected at boot with a list of compatible models</h4>
+      <p>An <code>oci/</code> model was assigned to a slot whose capability requirements it doesn't meet — usually a model without tool calling in the <code>agent</code> slot. The error names the offending slot and lists valid alternatives. See <a href="#cfg-llm">llm</a>.</p>
+
+      <h4>Every agent abstains</h4>
+      <p>Usually one of three things. The DBID doesn't match any data in the repository; the chosen snap window has no snapshots behind it; or the MCP client failed to attach, in which case agents run with no tools and abstain across the board. Run <code>observa setup check</code> and confirm the DBID against <code>DBA_HIST_DATABASE_INSTANCE</code>.</p>
+
+      <h4>Agents time out repeatedly</h4>
+      <p>Raise <code>turns.time_budget_seconds</code>, or lower <code>turns.max_concurrent_agents</code> if the wall-clock is being spent in rate-limit backoff rather than in reasoning. The LLM wrapper sleeps 60 seconds on a 429 to let the TPM window recover, which consumes the budget quickly at high concurrency.</p>
+
+      <h4>Garbled timestamps or shifted CSV columns</h4>
+      <p>An NLS normalization problem. Observa pins the session formats on connect precisely to avoid this; if you see it anyway, check whether a login trigger or glogin script is overriding them after the fact.</p>
+
+      <h4>ORA-00904 in agent queries</h4>
+      <p>An agent guessed a column name. It is instructed to discover real columns through <code>DBA_TAB_COLUMNS</code> first; a recurring pattern on a specific view is worth a look at the agent's specialty prompt.</p>
+
+      <h4>Full trace of a run</h4>
+      <p><code>uv run observa new --debug</code> writes <code>observa-debug.log</code>. The MCP subprocesses keep their own logs in <code>observa-sqlcl.log</code> and <code>observa-files-server.log</code>. All three are git-ignored.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Observa is licensed under the <a href="../LICENSE">Apache License 2.0</a>. Oracle, Oracle Database, Exadata, Real Application Clusters, Data Guard, AWR, ASH and SQLcl are trademarks of Oracle Corporation and/or its affiliates; this project is independent and not affiliated with or endorsed by Oracle. See <a href="../NOTICE">NOTICE</a>.</p>
+    <p><strong>No warranty.</strong> Observa produces LLM-generated hypotheses about production systems. Verify its conclusions before acting on them.</p>
+  </footer>
+
+</div>
+
+<script>
+// Highlight the nav entry for the section currently in view.
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.rail a'));
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main section[id]'));
+  if (!('IntersectionObserver' in window) || !sections.length) return;
+
+  var visible = new Set();
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) visible.add(e.target.id); else visible.delete(e.target.id);
+    });
+    var current = sections.filter(function (s) { return visible.has(s.id); })[0];
+    links.forEach(function (a) { a.classList.remove('on'); });
+    if (current && byId[current.id]) byId[current.id].classList.add('on');
+  }, { rootMargin: '-10% 0px -70% 0px' });
+
+  sections.forEach(function (s) { obs.observe(s); });
+})();
+</script>
+
+</body>
+</html>

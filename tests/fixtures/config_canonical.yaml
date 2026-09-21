@@ -1,0 +1,71 @@
+# Canonical config used by unit tests — independent of the developer's
+# live config/config.yaml so user-specific tweaks don't break test assertions.
+oracle:
+  host: "localhost"
+  port: 1521
+  service_name: "ORCLPDB1"
+  user: "observa"
+  password_env: "ORACLE_PWD"
+  wallet_path: ""
+  onnx_model_name: "all_MiniLM_L12_v2"
+
+artifacts:
+  base_dir: "/cases"
+
+parsers:
+  awr_html: true
+  alert_log: true
+  trace_file: true
+  hanganalyze: true
+  tfa_bundle: true
+  sql_health_check: true
+  lsinventory: true
+
+llm:
+  default_provider: "anthropic"
+  hypotheses_model: "claude-sonnet-4-6"
+  providers:
+    anthropic:
+      model: "claude-sonnet-4-6"
+      api_key_env: "ANTHROPIC_API_KEY"
+    openai:
+      model: "gpt-4o"
+      api_key_env: "OPENAI_API_KEY"
+
+agents:
+  max_iterations: 8
+  agent_timeout_seconds: 300
+  query_budget_per_agent: 20
+  enable_hypotheses: true
+  enable_cove: true
+  enable_bug_analyst: true
+  contradiction_threshold: 0.3
+  verification_support_threshold: 0.65
+
+mcp:
+  sqlcl_enabled: false
+  shell_whitelist: ["tfactl","adrci","unzip","cat","grep","head","tail","wc"]
+  mos_enabled: false
+  mos_fallback_web: true
+
+hitl:
+  query_preview_row_threshold: 100000
+  chat_max_chars: 2000
+  chat_enabled: true
+  data_request_enabled: false
+  window_warn_min_minutes: 30
+  window_block_max_hours: 6
+
+observability:
+  provider: "none"
+
+storage:
+  artifact_frames_retention: "case_close"
+  artifact_chunks_retention: "case_close"
+  checkpoint_compaction_on_close: true
+  mos_cache_ttl_days: 30
+
+ui:
+  theme: "flexoki"
+  show_token_cost: true
+  log_level: "INFO"

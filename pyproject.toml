@@ -1,0 +1,63 @@
+[project]
+name = "observa"
+version = "0.1.0"
+description = "Multi-agent Oracle Database performance post-mortem TUI, grounded in AWR evidence"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Fernando Melo" }]
+keywords = ["oracle", "awr", "database", "performance", "troubleshooting", "llm", "langgraph", "mcp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "langgraph>=0.2",
+    "langchain-anthropic>=0.3",
+    "langchain-openai>=0.3",
+    "oracledb>=2.0",
+    "textual>=0.80",
+    "typer>=0.12",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "sqlglot>=23.0",
+    "aiofiles>=23.0",
+    "python-dateutil>=2.9",
+    "python-dotenv>=1.0",
+    "mcp>=1.0",
+    "jinja2>=3.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/fmelodb/observa"
+Repository = "https://github.com/fmelodb/observa"
+Issues = "https://github.com/fmelodb/observa/issues"
+
+[project.scripts]
+observa = "observa.cli:app"
+
+[project.optional-dependencies]
+oci = [
+    "oci>=2.130",
+    "langchain-community>=0.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pyright>=1.1",
+]

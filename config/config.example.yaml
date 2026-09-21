@@ -1,0 +1,97 @@
+# config/config.example.yaml
+#
+# Copy to config/config.yaml and fill in your values:
+#     cp config/config.example.yaml config/config.yaml
+#
+# config/config.yaml is git-ignored — it holds machine-specific paths and
+# tenancy identifiers. Never commit it.
+
+oracle:
+  # Connection used ONLY by `observa setup check` to prove the AWR repository
+  # is reachable. Agents never use it — they go through SQLcl's MCP server.
+  host: "localhost"
+  port: 1521
+  service_name: "ORCLPDB1"
+  user: "observa"
+  password_env: "ORACLE_PWD"   # name of the env var holding the password
+
+llm:
+  # Provider for every slot that has no explicit override below.
+  # One of: anthropic | openai | oci
+  default_provider: "oci"
+
+  # Per-slot model overrides. Empty string = use the default provider's model.
+  # Prefix a model id with "oci/" to route it through OCI Generative AI,
+  # e.g. "oci/openai.gpt-5.5" or "oci/xai.grok-4-fast".
+  hypotheses_model: ""
+  consolidator_model: ""
+  cove_model: ""
+  master_chat_model: ""
+  agent_models: {}             # e.g. {sql: "oci/xai.grok-4-fast"}
+
+  providers:
+    anthropic:
+      model: "claude-sonnet-4-6"
+      api_key_env: "ANTHROPIC_API_KEY"
+    openai:
+      model: "gpt-5.5"
+      api_key_env: "OPENAI_API_KEY"
+    oci:
+      # Requires `uv sync --extra oci` and a configured ~/.oci/config.
+      model: "openai.gpt-5.4-mini"
+      compartment_id: "ocid1.compartment.oc1..REPLACE_WITH_YOUR_COMPARTMENT_OCID"
+      service_endpoint: "https://inference.generativeai.<region>.oci.oraclecloud.com"
+      auth_profile: "DEFAULT"
+      auth_type: "API_KEY"
+
+turns:
+  count: 2                     # reflection turns per case
+  time_budget_seconds: 120     # per-turn watchdog; agents that overrun abstain
+  max_concurrent_agents: 4
+
+case:
+  timeline_days: 15            # days of snapshot history on the intake timeline
+  baseline_offset_days: 7      # auto-suggested baseline: same hours, N days earlier
+
+agents:
+  enable_hypotheses: true
+  enable_cove: true
+  contradiction_threshold: 0.3
+  verification_support_threshold: 0.7
+  refinement:
+    enabled: true
+    universal_agents:          # always run, never dropped between turns
+      - wait_time
+      - ash
+    keep_severities:           # findings at these severities keep an agent active
+      - high
+      - critical
+    enable_cross_reference: true
+    min_active: 4              # safety floor — never run fewer than N agents
+  enabled:
+    wait_time: true
+    ash: true
+    infra: true
+    sql: true
+    memory: true
+    io_storage: true
+    concurrency: true
+    segment_object: true
+    rac: true
+    exadata: true
+    dg: true
+    file_reader: true
+
+mcp:
+  # Absolute path to the SQLcl launcher: sql.exe on Windows, sql on Linux/macOS.
+  sqlcl_path: "/opt/sqlcl/bin/sql"
+  # Name of the SQLcl saved connection pointing at the AWR repository.
+  sqlcl_connection_name: "observa"
+  # Hard cap on rows returned to an agent from any single query.
+  query_row_limit: 50
+  # Snap-window predicate enforcement on agent queries: warn | reject | off.
+  enforce_window: "warn"
+
+ui:
+  # Any Textual built-in theme name.
+  theme: "flexoki"

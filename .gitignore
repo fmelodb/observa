@@ -1,0 +1,52 @@
+# --- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# --- Secrets and machine-local config -------------------------------------
+.env
+*.env
+# Copy from config/config.example.yaml. Holds absolute paths and tenancy OCIDs.
+config/config.yaml
+
+# --- Ephemeral case output + run logs -------------------------------------
+# Observa is stateless by design; these are per-run artifacts, never sources.
+CASE-*
+observa-sqlcl.log
+observa-files-server.log
+observa-debug.log
+
+# --- Local agent / worktree tooling ---------------------------------------
+.claude/
+.superpowers/
+.worktrees/
+
+# --- Authoring material, not product documentation ------------------------
+# Working notes kept locally: design essays, pre-implementation mockups and
+# the per-feature plan/spec pairs. Several describe architectures that were
+# explored and dropped, so publishing them would misdocument the project.
+docs/superpowers/
+docs/specs/
+docs/blog-observa.md
+docs/blueprint-troubleshooting-oracle.md
+docs/fluxo-orquestracao.md
+docs/mockups-cli.html
+docs/observa-system-design.jpg
+
+# Screenshots of real diagnostic runs. Every one captured production identifiers
+# — DBID, SQL_IDs, hostnames, instance names, schema/index/partition names and
+# TFA trace filenames — so none of them can be published. Docs use synthetic
+# terminal mockups instead. Never commit a screenshot of a real case.
+docs/screenshots/
+
+# --- Container definitions -------------------------------------------------
+# Predate the SQLcl-MCP architecture: the image installs neither SQLcl nor a
+# JRE, so `observa new` cannot start inside it. Ignored until rewritten.
+Containerfile
+compose.yaml
